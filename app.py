@@ -1056,10 +1056,23 @@ elif page == "📈 Explainability (SHAP)":
     # Global importance
     st.markdown("#### Feature Importance (Mean Absolute SHAP)")
 
+    # Calculate global importance robustly
     if isinstance(shap_values, list):
-        mean_abs_shap = np.mean(np.abs(shap_values[1][:50]), axis=0)
+        # Check if list has at least two elements (for binary classification)
+        # shap_values[1] is usually the 'Positive' class churn risk
+        idx = 1 if len(shap_values) > 1 else 0
+        mean_abs_shap = np.mean(np.abs(shap_values[idx]), axis=0)
+    elif hasattr(shap_values, 'shape') and len(shap_values.shape) == 3:
+        # Shape is (samples, features, output_classes)
+        # Select the positive class (usually index 1 if binary)
+        idx = 1 if shap_values.shape[2] > 1 else 0
+        mean_abs_shap = np.mean(np.abs(shap_values[:, :, idx]), axis=0)
     else:
+        # Fallback for standard (samples, features) 2D array
         mean_abs_shap = np.mean(np.abs(shap_values), axis=0)
+    
+    # Ensure it's a 1D array for DataFrame construction
+    mean_abs_shap = np.array(mean_abs_shap).flatten()
 
     feature_importance = pd.DataFrame({
         'Feature': feature_names,

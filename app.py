@@ -703,37 +703,37 @@ elif page == "🤖 ML Model Training":
         y_pred_proba = model.predict_proba(X_test_scaled)[:, 1]
         
         # Metrics
-    auc_score = roc_auc_score(y_test, y_pred_proba)
-    precision = precision_score(y_test, y_pred)
-    recall = recall_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred)
-    
-    # Cross-validation
-    cv_scores = cross_val_score(model, X_train_scaled, y_train, cv=5, scoring='roc_auc')
-    
-    results.append({
-        'Model': name,
-        'ROC-AUC': auc_score,
-        'Precision': precision,
-        'Recall': recall,
-        'F1-Score': f1,
-        'CV Mean': cv_scores.mean(),
-        'CV Std': cv_scores.std()
-    })
-    
-    trained_models[name] = {
-        'model': model,
-        'y_pred': y_pred,
-        'y_pred_proba': y_pred_proba,
-        'scaler': scaler
-    }
-    
-    if auc_score > best_auc:
-        best_auc = auc_score
-        best_model_name = name
-        best_model = model
-    
-    progress_bar.progress((idx + 1) / len(models_dict))
+        auc_score = roc_auc_score(y_test, y_pred_proba)
+        precision = precision_score(y_test, y_pred)
+        recall = recall_score(y_test, y_pred)
+        f1 = f1_score(y_test, y_pred)
+        
+        # Cross-validation
+        cv_scores = cross_val_score(model, X_train_scaled, y_train, cv=5, scoring='roc_auc')
+        
+        results.append({
+            'Model': name,
+            'ROC-AUC': auc_score,
+            'Precision': precision,
+            'Recall': recall,
+            'F1-Score': f1,
+            'CV Mean': cv_scores.mean(),
+            'CV Std': cv_scores.std()
+        })
+        
+        trained_models[name] = {
+            'model': model,
+            'y_pred': y_pred,
+            'y_pred_proba': y_pred_proba,
+            'scaler': scaler
+        }
+        
+        if auc_score > best_auc:
+            best_auc = auc_score
+            best_model_name = name
+            best_model = model
+        
+        progress_bar.progress((idx + 1) / len(models_dict))
 
     st.success("✅ Model training completed!")
     
@@ -1109,12 +1109,18 @@ elif page == "📈 Explainability (SHAP)":
             'Churn Probability': best_model.predict_proba(X_test[:100])[:, 1]
         }).sort_values('Feature Value')
     
+        try:
+            import statsmodels
+            has_statsmodels = True
+        except ImportError:
+            has_statsmodels = False
+
         fig_effect = px.scatter(
             feature_data,
             x='Feature Value',
             y='Churn Probability',
-            trendline='ols',
-            title=f"Partial Dependence: {selected_feature}",
+            trendline='ols' if has_statsmodels else None,
+            title=f"Partial Dependence: {selected_feature}" + (" (Trendline needs statsmodels)" if not has_statsmodels else ""),
             labels={"Feature Value": selected_feature, "Churn Probability": "Churn Probability"},
             color='Churn Probability',
             color_continuous_scale="RdYlGn_r",
